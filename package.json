@@ -28,6 +28,7 @@
     "cordova-plugin-media": "^5.0.3",
     "core-js": "^2.5.4",
     "rxjs": "~6.5.1",
+    "swiper": "^5.4.2",
     "tslib": "^1.9.0",
     "zone.js": "~0.9.1"
   },
