@@ -52,11 +52,12 @@ export class FlowComponentHostDirective {
 }
 /*********************************************************************
  * Dynamic element to populate flow specific flow component
+ * https://angular.io/guide/dynamic-component-loader
  *********************************************************************/
 import { Component, OnInit } from "@angular/core";
 @Component({
   selector: "plh-module-page-flow-component",
-  template: ` <ng-template appFlowComponentHost></ng-template> `,
+  template: `<ng-template appFlowComponentHost></ng-template> `,
 })
 export class FlowComponent implements OnInit {
   @Input() row: FlowTypes.Module_pageRow;
@@ -72,7 +73,8 @@ export class FlowComponent implements OnInit {
     const viewContainerRef = this.flowComponentHost.viewContainerRef;
     viewContainerRef.clear();
     const componentRef = viewContainerRef.createComponent<any>(componentFactory);
-    componentRef.instance.data = this.row;
+    componentRef.instance.row = this.row;
+    componentRef.instance.flow = this.flow;
   }
 }
 /*********************************************************************
