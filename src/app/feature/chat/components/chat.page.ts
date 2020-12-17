@@ -201,9 +201,13 @@ export class ChatPage {
     } else {
       this.responseOptions = [];
     }
+    let scrollDelay = 100;
+    if (message.attachments && message.attachments.length > 0 || message.innerImageUrl) {
+      scrollDelay = 1000;
+    }
     setTimeout(() => {
       this.chatEndDiv.nativeElement.scrollIntoView({ behavior: "smooth", block: "end" });
-    }, 50);
+    }, scrollDelay);
     this.cd.detectChanges();
   }
 
@@ -248,7 +252,14 @@ export class ChatPage {
     if (customAction) {
       this.doCustomResponseAction(option.customAction);
     }
-    this.onNewMessage({ text, sender: "user" });
+    let newMsg: ChatMessage = { text, sender: "user" };
+    if (option.hideText) {
+      newMsg.hideText = true;
+    }
+    if (option.imageUrl) {
+      newMsg.innerImageUrl = option.imageUrl;
+    }
+    this.onNewMessage(newMsg);
     this.chatService.sendMessage({ text, sender: "user" });
     this.messagesSent += 1;
   }
