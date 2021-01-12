@@ -128,7 +128,6 @@ export namespace FlowTypes {
     /** when tasks require additional paremeters, such as the name of a reward, provide here */
     start_action_args?: string;
     groups_list?: string[];
-    evaluation?: string;
     label?: string;
     requires_list?: string[];
   }
@@ -145,7 +144,7 @@ export namespace FlowTypes {
   /** Format of conversation rows post processing */
   export interface ConversationRow {
     row_id?: string | number;
-    type: "start_new_flow" | "send_message" | "story_message" | "go_to" | "save_value" | "exit";
+    type: "start_new_flow" | "send_message" | "story_message" | "go_to" | "save_value" | "exit" | "mark_as_completed" | "split_random";
     from?: string | number;
     condition?: string | number;
     condition_var?: string;
