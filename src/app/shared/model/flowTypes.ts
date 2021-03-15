@@ -1,5 +1,4 @@
 /* tslint:disable:class-name */
-import { BehaviorSubject } from "scripts/node_modules/rxjs";
 import { RapidProFlowExport } from "src/app/feature/chat/models";
 export { RapidProFlowExport } from "src/app/feature/chat/models";
 import { TipRow } from "src/app/feature/tips/models/tips.model";
@@ -318,17 +317,17 @@ export namespace FlowTypes {
   export interface Template extends FlowTypeBase {
     flow_type: "template";
     rows: TemplateRow[];
-    _setLocalVariable?: (name: string, value: any) => any;
   }
 
-  export type TemplateRowType = 
-    "image"
+  export type TemplateRowType =
+    | "image"
     | "title"
     | "text"
     | "animated_section"
     | "animated_section_group"
     | "display_group"
     | "set_variable"
+    | "set_global"
     | "nested_properties"
     | "button"
     | "image"
@@ -338,22 +337,54 @@ export namespace FlowTypes {
     | "template"
     | "timer"
     | "slider"
+    | "number_selector"
+    | "round_button"
     | "nav_group"
     | "nav_section"
-    | "template_group";
+    | "slider_new";
 
   export interface TemplateRow {
-    type?: TemplateRowType;
+    type: TemplateRowType;
     name?: string;
-    value?: any;
-    action_list?: string[];
+    value?: any; // TODO - incoming data will be string, so components should handle own parsing
+    action_list?: TemplateRowAction[];
     parameter_list?: string[];
-    hidden?: boolean | string;
+    hidden?: string;
     rows?: TemplateRow[];
+    /** track fields above where dynamic expressions have been used in field evaluation */
+    _dynamicFields?: { [key in keyof TemplateRow]?: TemplateRowDynamicEvaluator[] };
 
     /* Used for authoring comments. Not used in code */
     comments?: string;
     __EMPTY?: any;
+  }
+  /** Data passed back from regex match, e.g. expression @local.someField => type:local, fieldName: someField */
+  export interface TemplateRowDynamicEvaluator {
+    fullExpression: string;
+    matchedExpression: string;
+    type: "local" | "fields";
+    fieldName: string;
+  }
+  export interface TemplateRowAction {
+    event_id:
+      "click"
+      | "completed"
+      | "uncompleted"
+    // TODO - 2021-03-11 - most of list needs reconsideration/implementation
+    action_id:
+      | "" // TODO document this property for stop propogation
+      | "set_value"
+      | "set_field"
+      | "set_local"
+      | "set_global"
+      | "emit"
+      | "respond_to_action" // Is this needed?
+      | "exit" // Is this needed?
+      | "completed" // Is this needed?
+      | "uncompleted" // Is this needed?
+      | "mark_as_completed" // Is this needed?
+      | "mark_as_skipped"; // Is this needed?
+    args: string[];
   }
 
   /* Used for setting default parameters for template components */
@@ -365,7 +396,6 @@ export namespace FlowTypes {
   export interface Component_defaultsRow {
     parameter: string;
     default_value?: string | number | boolean;
-    comments?: string; /* Used for authoring comments. Not used in code */
+    comments?: string /* Used for authoring comments. Not used in code */;
   }
-
 }
