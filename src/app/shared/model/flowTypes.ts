@@ -348,8 +348,7 @@ export namespace FlowTypes {
     | "nav_section"
     | "set_default"
     | "text_box"
-    | "combo_box"
-    | "slider_new";
+    | "combo_box";
 
   export interface TemplateRow {
     type: TemplateRowType;
@@ -370,7 +369,7 @@ export namespace FlowTypes {
   export interface TemplateRowDynamicEvaluator {
     fullExpression: string;
     matchedExpression: string;
-    type: "local" | "fields";
+    type: "local" | "fields" | "global";
     fieldName: string;
   }
   export interface TemplateRowAction {
