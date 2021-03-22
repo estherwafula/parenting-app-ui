@@ -1,7 +1,7 @@
-import { Component, Input, OnInit } from "@angular/core";
-import { takeWhile } from "rxjs/operators";
-import { BehaviorSubject } from "scripts/node_modules/rxjs";
-import { ContactFieldService } from "src/app/feature/chat/services/offline/contact-field.service";
+import { Component, Input, OnDestroy, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { takeUntil, takeWhile } from "rxjs/operators";
+import { BehaviorSubject, Subject } from "scripts/node_modules/rxjs";
 import { TEMPLATE } from "../../services/data/data.service";
 import { FlowTypes, ITemplateContainerProps } from "./models";
 import { TemplateService } from "./services/template.service";
@@ -33,28 +33,44 @@ const DISPLAY_TYPES: FlowTypes.TemplateRowType[] = [
   templateUrl: "./template-container.component.html",
   styleUrls: ["./template-container.component.scss"],
 })
-export class TemplateContainerComponent implements OnInit, ITemplateContainerProps {
+export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateContainerProps {
   @Input() name: string;
   @Input() templatename: string;
   @Input() parent?: TemplateContainerComponent;
   @Input() row?: FlowTypes.TemplateRow;
   template: FlowTypes.Template;
+  /** track path to template from top parent (not currently used) */
+  templateBreadcrumbs: string[] = [];
   /** local state tree used to handle default and overwritten row properties */
   localVariables: ILocalVariables = {};
-  debugMode = false;
+  componentDestroyed$ = new Subject();
+  debugMode: boolean;
+  // TODO - link debug toggle to build environment or advanced setting (hide for general users)
+  showDebugToggle = true;
   private actionsQueue: FlowTypes.TemplateRowAction[] = [];
   private actionsQueueProcessing$ = new BehaviorSubject<boolean>(false);
 
-  showTemplates = false;
-
-  constructor(private contactFieldService: ContactFieldService, private templateService: TemplateService) {
-    if (location.href.indexOf("showTemplates=true") > -1) {
-      this.showTemplates = true;
-    }
+  constructor(
+    private templateService: TemplateService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {
+    // subscribe to query params to indicate if debugMode is enabled
+    this.route.queryParamMap
+      .pipe(takeUntil(this.componentDestroyed$))
+      .subscribe((paramMap) => (this.debugMode = paramMap.get("debugMode") === "true"));
   }
 
   ngOnInit() {
     this.initialiseTemplate();
+    const { name, templatename, parent, row, templateBreadcrumbs } = this;
+    // console.log("template initialised", { name, templatename, parent, row, templateBreadcrumbs });
+  }
+
+  ngOnDestroy(): void {
+    // allow any subscriptions to be removed by binding to these events (avoid memory leak)
+    this.componentDestroyed$.next(true);
+    this.componentDestroyed$.unsubscribe();
   }
 
   /***************************************************************************************
@@ -69,10 +85,14 @@ export class TemplateContainerComponent implements OnInit, ITemplateContainerPro
     console.log("About to call handleActionsCallback", this.name);
     this.handleActionsCallback([...actions], res);
     // TODO - possibly attach unique id to action to passback action results
-
   }
   /** Optional method child component can add to handle post-action callback */
-  public async handleActionsCallback(actions: FlowTypes.TemplateRowAction[], results: any) { }
+  public async handleActionsCallback(actions: FlowTypes.TemplateRowAction[], results: any) {}
+
+  public setDebugMode(debugMode: boolean) {
+    const queryParams = { debugMode: debugMode || null };
+    this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: "merge" });
+  }
   /**
    * To avoid actions potentially trying to write to same db records at the same time,
    * all actions are added to a queue and processed in order of addition
@@ -114,17 +134,24 @@ export class TemplateContainerComponent implements OnInit, ITemplateContainerPro
       case "set_global":
         console.log("Setting global variable", key, value);
         return this.templateService.setGlobal(key, value);
+      case "set_field":
+        return this.templateService.setField(key, value);
       case "emit":
         // TODO - handle DB writes or similar for emit handling
         if (this.parent) {
           // continue to emit any actions to parent where defined
 
-          // When emitting, tell parent template to execute actions in 
+          // When emitting, tell parent template to execute actions in
           console.log("Emiting", args[0], " from ", this.row?.name, " to parent ", this.parent);
           if (this.row && this.row.action_list) {
-            const actionsForEmittedEvent = this.row.action_list.filter((action) => action.trigger === args[0]);
+            const actionsForEmittedEvent = this.row.action_list.filter(
+              (action) => action.trigger === args[0]
+            );
             console.log("Excuting actions matching event ", args[0], actionsForEmittedEvent);
-            await this.parent.handleActions(actionsForEmittedEvent, `${this.name}.${action._triggeredBy}`);
+            await this.parent.handleActions(
+              actionsForEmittedEvent,
+              `${this.name}.${action._triggeredBy}`
+            );
             // Below needs discussion
             // await this.parent.handleActions([action], `${this.name}.${action._triggeredBy}`);
           } else {
@@ -153,7 +180,8 @@ export class TemplateContainerComponent implements OnInit, ITemplateContainerPro
   private initialiseTemplate() {
     // Lookup template and provide fallback
     const foundTemplate =
-      TEMPLATE.find((t) => t.flow_name === this.templatename) || NOT_FOUND_TEMPLATE(this.templatename);
+      TEMPLATE.find((t) => t.flow_name === this.templatename) ||
+      NOT_FOUND_TEMPLATE(this.templatename);
     this.template = JSON.parse(JSON.stringify(foundTemplate));
     // When processing local variables check parent in case there are any variables
     // that have already been set/overridden
@@ -164,6 +192,8 @@ export class TemplateContainerComponent implements OnInit, ITemplateContainerPro
       console.log({ localVariables: this.localVariables });
     }
     this.template.rows = this.processRows(this.template.rows, this.localVariables);
+    // keep track of path to this template from any parents
+    this.templateBreadcrumbs = [...(this.parent?.templateBreadcrumbs || []), this.name];
   }
 
   /**
@@ -195,6 +225,10 @@ export class TemplateContainerComponent implements OnInit, ITemplateContainerPro
       }
       if (type === "display_theme") {
         // TODO - inherited variable should be defined in better/consistent way
+      }
+
+      if (type === "set_field") {
+        this.templateService.setField(name, value);
       }
 
       // handle rows which have nested structures
@@ -244,13 +278,31 @@ export class TemplateContainerComponent implements OnInit, ITemplateContainerPro
         // identify if the current field-value has a dynamic expression, or a previous one
         // TODO - if a dynamic field is overwritten by static value (not just revaluated) that value
         // would also be overwritten on render (so needs fix, possibly moving dynamic fields to parser to merge)
-        const dynamicEvaluator = _extractDynamicEvaluators(r[field]) || r._dynamicFields?.[field];
-        if (dynamicEvaluator) {
-          r._dynamicFields = r._dynamicFields || {};
-          // evaluate dynamic field, keeping reference for future
-          r._dynamicFields[field] = dynamicEvaluator as any;
-          r[field] = this.parseDynamicValue(r._dynamicFields[field]);
+
+        // TODO - Memoize evaluators for arrays
+        if (Array.isArray(r[field]) && r[field].length > 0) {
+          let array = r[field] as any[];
+          let dynamicEvaluatorsPerItem = array.map((item) => _extractDynamicEvaluators(item));
+          if (dynamicEvaluatorsPerItem.length > 0) {
+            let oldList = r[field];
+            r[field] = dynamicEvaluatorsPerItem.map((evaluator, idx) => {
+              if (evaluator) {
+                return this.parseDynamicValue(evaluator);
+              } else {
+                return oldList[idx];
+              }
+            });
+          }
+        } else {
+          let dynamicEvaluators = _extractDynamicEvaluators(r[field]) || r._dynamicFields?.[field];
+          if (dynamicEvaluators) {
+            r._dynamicFields = r._dynamicFields || {};
+            // evaluate dynamic field, keeping reference for future
+            r._dynamicFields[field] = dynamicEvaluators as any;
+            r[field] = this.parseDynamicValue(r._dynamicFields[field]);
+          }
         }
+
         // TODO - evaulate function expressions (e.g. !@fields.something)
       });
       // handle nested templates
@@ -288,12 +340,13 @@ export class TemplateContainerComponent implements OnInit, ITemplateContainerPro
         case "local":
           parsedValue = this.localVariables[fieldName]?.value || "";
           break;
+        case "field":
         case "fields":
-          parsedValue = this.contactFieldService.getContactFieldSync(fieldName);
+          parsedValue = this.templateService.getField(fieldName);
           break;
         case "global":
-            parsedValue = this.templateService.getGlobal(fieldName);
-            break;
+          parsedValue = this.templateService.getGlobal(fieldName);
+          break;
         default:
           console.error("No evaluator for dynamic field:", evaluator.matchedExpression);
           parsedValue = evaluator.matchedExpression;
@@ -317,7 +370,7 @@ export class TemplateContainerComponent implements OnInit, ITemplateContainerPro
 }
 
 /** Some strings contain a variable expression such as "/assets/@fields.name/happy.jpg" or "welcome @local.name!" */
-function _extractDynamicEvaluators(fullExpression: any) {
+function _extractDynamicEvaluators(fullExpression: any): FlowTypes.TemplateRowDynamicEvaluator[] {
   // match fields such as @local.someField or @fields.someField.deeperNested
   // first prefix should consist only of letters (e.g. @local, @fields)
   // second part can be any letter, number, or characters _ .
