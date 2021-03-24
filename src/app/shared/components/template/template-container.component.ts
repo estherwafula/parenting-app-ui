@@ -6,7 +6,9 @@ import { TEMPLATE } from "../../services/data/data.service";
 import { FlowTypes, ITemplateContainerProps } from "./models";
 import { TemplateService } from "./services/template.service";
 
-type ILocalVariables = { [name: string]: any };
+interface ILocalVariables {
+  [name: string]: any;
+}
 
 /** list of fields where overwrites will be allowed */
 const VARIABLE_FIELDS: (keyof FlowTypes.TemplateRow)[] = [
@@ -63,7 +65,7 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
 
   ngOnInit() {
     this.initialiseTemplate();
-    const { name, templatename, parent, row, templateBreadcrumbs } = this;
+    // const { name, templatename, parent, row, templateBreadcrumbs } = this;
     // console.log("template initialised", { name, templatename, parent, row, templateBreadcrumbs });
   }
 
@@ -78,16 +80,42 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
    **************************************************************************************/
   /** Public method to add actions to processing queue and process */
   public async handleActions(actions: FlowTypes.TemplateRowAction[] = [], _triggeredBy: string) {
-    actions.forEach((action) => this.actionsQueue.push({ ...action, _triggeredBy }));
-    // TODO - pass back relevant info from processActionsQueue
-    console.log("processActionQueue for ", this.name);
+    const unhandledActions = await this.handleActionsInterceptor(actions);
+    unhandledActions.forEach((action) => this.actionsQueue.push({ ...action, _triggeredBy }));
     const res = await this.processActionQueue();
-    console.log("About to call handleActionsCallback", this.name);
-    this.handleActionsCallback([...actions], res);
-    // TODO - possibly attach unique id to action to passback action results
+    await this.handleActionsCallback([...unhandledActions], res);
+    this.handleNavActions(actions);
   }
   /** Optional method child component can add to handle post-action callback */
-  public async handleActionsCallback(actions: FlowTypes.TemplateRowAction[], results: any) {}
+  public async handleActionsCallback(actions: FlowTypes.TemplateRowAction[], results: any) { }
+
+  /** Optional method child component can filter action list to handle outside of default handlers */
+  public async handleActionsInterceptor(
+    actions: FlowTypes.TemplateRowAction[]
+  ): Promise<FlowTypes.TemplateRowAction[]> {
+    return actions;
+  }
+
+  private handleNavActions(actions: FlowTypes.TemplateRowAction[] = []) {
+    console.log("handle nav actions", {
+      actions,
+      name: this.name,
+      parent: this.parent,
+      row: this.row,
+    });
+    const previousTemplate = this.route.snapshot.queryParamMap.get("from_template");
+    const navExitAction = actions.find(
+      (a) => a.action_id === "emit" && (a.trigger === "completed" || a.trigger === "uncompleted")
+    );
+
+    if (!this.parent && previousTemplate && navExitAction) {
+      this.router.navigate(["../", previousTemplate], {
+        relativeTo: this.route,
+        queryParams: { nav_emit: navExitAction.args[0] },
+        replaceUrl: true,
+      });
+    }
+  }
 
   public setDebugMode(debugMode: boolean) {
     const queryParams = { debugMode: debugMode || null };
@@ -101,8 +129,7 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
     const processedActions = [];
     // start the queue if it is not already running
     if (!this.actionsQueueProcessing$.value) {
-      console.group("Process Actions");
-      console.log("Template:", this.name);
+      console.group(`Process Actions - ${this.name}`, [...this.actionsQueue]);
       this.actionsQueueProcessing$.next(true);
       while (this.actionsQueue.length > 0) {
         const action = this.actionsQueue[0];
@@ -123,8 +150,6 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
   private async processAction(action: FlowTypes.TemplateRowAction) {
     console.log("process action", action);
     const { action_id, args } = action;
-    //part of temporary fix
-    let actionsForEmittedEvent = [];
     const [key, value] = args;
     switch (action_id) {
       case "set_local":
@@ -134,18 +159,50 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
       case "set_global":
         console.log("Setting global variable", key, value);
         return this.templateService.setGlobal(key, value);
+      case "go_to":
+        const [templatename] = action.args;
+        return this.router.navigate(["template", templatename], {
+          queryParams: { from_template: this.name },
+          queryParamsHandling: "merge",
+        });
+      case "pop_up":
+        /*** WiP */
+        console.warn("No handler for action", { action_id, args });
+        break;
+      // const childContainerProps: ITemplateContainerProps = {
+      //   name: `${this.name}_${templatename}`,
+      //   templatename,
+      //   parent: this,
+      //   row: {
+      //     action_list: [
+      //       { trigger: "completed", action_id: "emit", args: ["dismiss:completed"] },
+      //       { trigger: "uncompleted", action_id: "emit", args: ["dismiss:uncompleted"] },
+      //     ],
+      //   } as any,
+      // };
+      // const childTemplateModal = await this.modalCtrl.create({
+      //   component: TemplateContainerComponent,
+      //   componentProps: childContainerProps,
+      // });
+      // await childTemplateModal.present();
+      // const dismissed = await childTemplateModal.onDidDismiss();
+      // console.log("dismissed", dismissed);
       case "set_field":
         return this.templateService.setField(key, value);
       case "emit":
         // TODO - handle DB writes or similar for emit handling
         if (this.parent) {
           // continue to emit any actions to parent where defined
-
           // When emitting, tell parent template to execute actions in
-          console.log("Emiting", args[0], " from ", this.row?.name, " to parent ", this.parent);
+          console.log(
+            "Emiting",
+            args[0],
+            ` from ${this.row?.name || "(no row)"} to parent ${this.parent?.name || "(no parent)"}`,
+            this.parent
+          );
           if (this.row && this.row.action_list) {
             const actionsForEmittedEvent = this.row.action_list.filter(
-              (action) => action.trigger === args[0]
+              (a) => a.trigger === args[0]
             );
             console.log("Excuting actions matching event ", args[0], actionsForEmittedEvent);
             await this.parent.handleActions(
@@ -183,6 +240,8 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
       TEMPLATE.find((t) => t.flow_name === this.templatename) ||
       NOT_FOUND_TEMPLATE(this.templatename);
     this.template = JSON.parse(JSON.stringify(foundTemplate));
+    // if template created at top level also ensure it has a name
+    this.name = this.name || this.templatename;
     // When processing local variables check parent in case there are any variables
     // that have already been set/overridden
     const parentVariables = this.parent?.localVariables?.[this.name];
@@ -207,7 +266,8 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
    */
   private processVariables(
     templateRows: FlowTypes.TemplateRow[],
-    variables: ILocalVariables = {}
+    variables: ILocalVariables = {},
+    localvariables: ILocalVariables = {}
   ): ILocalVariables {
     templateRows.forEach((r) => {
       let { name, value, rows, type } = r;
@@ -215,11 +275,15 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
       // set_variable is actually setting the _value field, so should be called accordingly
       if (type === "set_variable" || type === "set_local" || type === "nested_properties") {
         variables[name] = variables[name] || {};
+        localvariables[name] = variables[name] || {};
         // handle merging updated properties
         VARIABLE_FIELDS.forEach((field) => {
           if (r[field]) {
             // don't override values that have otherwise been set from parent or nested properties
-            variables[name][field] = variables[name][field] || r[field];
+            // local variables within r[field] are parsed 
+            variables[name][field] = variables[name][field] || this.parseLocalVariables(r[field], localvariables);
+            // local variables on a given excel sheet are managed together
+            localvariables[name][field] = localvariables[name][field] || variables[name][field]
           }
         });
       }
@@ -241,15 +305,15 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
           // nested properties assign specific value further down the tree
           // TODO handle case where name is further nested (e.g. templateA.child1.someField)
           case "nested_properties":
-            variables[name] = this.processVariables(rows, variables[name]);
+            variables[name] = this.processVariables(rows, variables[name], localvariables);
             break;
           // nested templates are handled in the same way as nested properties
           case "template":
-            variables[name] = this.processVariables(rows, variables[name]);
+            variables[name] = this.processVariables(rows, variables[name], localvariables);
             break;
           // display groups are visual distinction only, process the rest of the variables as if they were inline
           case "display_group":
-            variables = { ...variables, ...this.processVariables(rows, variables) };
+            variables = { ...variables, ...this.processVariables(rows, variables, localvariables) };
             break;
           // otherwise treat nested rows as value-namespaced local variables
           default:
@@ -287,7 +351,7 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
             let oldList = r[field];
             r[field] = dynamicEvaluatorsPerItem.map((evaluator, idx) => {
               if (evaluator) {
-                return this.parseDynamicValue(evaluator);
+                return this.parseDynamicValue(evaluator, field);
               } else {
                 return oldList[idx];
               }
@@ -299,7 +363,7 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
             r._dynamicFields = r._dynamicFields || {};
             // evaluate dynamic field, keeping reference for future
             r._dynamicFields[field] = dynamicEvaluators as any;
-            r[field] = this.parseDynamicValue(r._dynamicFields[field]);
+            r[field] = this.parseDynamicValue(r._dynamicFields[field], field);
           }
         }
 
@@ -330,7 +394,7 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
     return rowsWithReplacedValues;
   }
 
-  private parseDynamicValue(evaluators: FlowTypes.TemplateRowDynamicEvaluator[]) {
+  private parseDynamicValue(evaluators: FlowTypes.TemplateRowDynamicEvaluator[], field: string) {
     let parsedExpression = evaluators[0].fullExpression;
     // In case an expression contains multiple parts to evaluate we will handle 1 at a time and overwrite the original
     for (let evaluator of evaluators) {
@@ -354,14 +418,51 @@ export class TemplateContainerComponent implements OnInit, OnDestroy, ITemplateC
       parsedExpression = parsedExpression.replace(matchedExpression, parsedValue);
     }
 
-    // Handle negated conditions - true/false will already have been filled as text so manually toggle
-    if (parsedExpression.startsWith("!")) {
-      parsedExpression = parsedExpression.replace("!true", "false").replace("!false", "true");
-      if (parsedExpression.startsWith("!")) {
-        console.error("Negation condition not handled correctly", parsedExpression);
+    // Support Javascript evaluation for hidden field only
+    if (field === "hidden" && parsedExpression !== "true" && parsedExpression !== "false") {
+      const funcString = `"use strict"; return (${parsedExpression});`;
+      try {
+        const func = new Function(funcString);
+        return func.apply(this);
+      } catch (ex) {
+        console.warn("Hidden evaulation exception ", ex);
+        console.warn(funcString);
+        return false;
       }
     }
+
     return parsedExpression;
+  }
+
+  private parseLocalVariables(variable: any, localvariables: ILocalVariables = {}) {
+    let evaluators: FlowTypes.TemplateRowDynamicEvaluator[] = _extractDynamicEvaluators(variable);
+    if (evaluators) {
+      let parsedExpression = evaluators[0].fullExpression;
+      // In case an expression contains multiple parts to evaluate we will handle 1 at a time and overwrite the original
+      for (let evaluator of evaluators) {
+        let parsedValue: any;
+        const { matchedExpression, type, fieldName } = evaluator;
+        switch (type) {
+          case "local":
+            parsedValue = localvariables[fieldName]?.value || evaluator.matchedExpression;
+            break;
+          case "field":
+          case "fields":
+            parsedValue = this.templateService.getField(fieldName);
+            break;
+          case "global":
+            parsedValue = this.templateService.getGlobal(fieldName);
+            break;
+          default:
+            parsedValue = evaluator.matchedExpression;
+        }
+        parsedExpression = parsedExpression.replace(matchedExpression, parsedValue);
+      }
+
+      return parsedExpression;
+    } else {
+      return variable
+    };
   }
   /** When using ngFor loop track by  */
   public trackByRow(index: number, row: FlowTypes.TemplateRow) {
@@ -380,7 +481,7 @@ function _extractDynamicEvaluators(fullExpression: any): FlowTypes.TemplateRowDy
     let match: RegExpExecArray;
     // run recursive match for all dynamic expressions
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec#finding_successive_matches
-    // tslint:disable:no-conditional-assignment
+    /* eslint-disable no-cond-assign */
     while ((match = regex.exec(fullExpression)) !== null) {
       const [matchedExpression, type, fieldName] = match as any[];
       allMatches.push({ fullExpression, matchedExpression, type, fieldName });

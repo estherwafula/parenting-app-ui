@@ -1,4 +1,4 @@
-/* tslint:disable */
+/* eslint-disable */
   import { FlowTypes } from "src/app/shared/model/flowTypes";
   export const home_page: FlowTypes.Home_page[] = [
   {
@@ -12,7 +12,7 @@
         "text": "Weekly Workshops",
         "visible": true,
         "enabled": true,
-        "route": "/template",
+        "route": "/template/workshop_buttons_temp",
         "left_image": "plh_images/home_page/home_page_workshops.svg"
       },
       {
@@ -29,8 +29,8 @@
         "id": "parent_center",
         "text": "Parent Centre",
         "visible": true,
-        "enabled": false,
-        "route": "/parent_center",
+        "enabled": true,
+        "route": "/template",
         "left_image": "plh_images/home_page/home_page_parent_center.svg"
       }
     ],

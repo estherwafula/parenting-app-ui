@@ -1,4 +1,4 @@
-/* tslint:disable:class-name */
+/* eslint-disable @typescript-eslint/naming-convention */
 import { RapidProFlowExport } from "src/app/feature/chat/models";
 export { RapidProFlowExport } from "src/app/feature/chat/models";
 import { TipRow } from "src/app/feature/tips/models/tips.model";
@@ -353,6 +353,9 @@ export namespace FlowTypes {
     | "simple_checkbox"
     | "set_default"
     | "text_box"
+    | "combo_box"
+    | "tile_component"
+    | "css_anim"
     | "combo_box";
 
   export interface TemplateRow {
@@ -360,6 +363,7 @@ export namespace FlowTypes {
     name?: string;
     value?: any; // TODO - incoming data will be string, so components should handle own parsing
     action_list?: TemplateRowAction[];
+    style_list?: string[];
     parameter_list?: string[];
     hidden?: string;
     rows?: TemplateRow[];
