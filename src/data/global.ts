@@ -113,7 +113,7 @@
       {
         "type": "declare_global_constant",
         "name": "essential_tools",
-        "value": "Essential Tools"
+        "value": "Essential tools"
       },
       {
         "type": "declare_global_constant",
@@ -314,13 +314,13 @@
       {
         "type": "declare_global_constant",
         "name": "w_1on1_short",
-        "value": "1 on 1",
+        "value": "One-on-One Time",
         "comments": "ETW 3 -- done"
       },
       {
         "type": "declare_global_constant",
         "name": "w_praise",
-        "value": "Praise & Positive Reinforcement",
+        "value": "Praise",
         "comments": "praise"
       },
       {
@@ -338,32 +338,32 @@
       {
         "type": "declare_global_constant",
         "name": "w_instruct_short",
-        "value": "Instructions",
+        "value": "Positive Instructions",
         "comments": "ETW 2 -- done"
       },
       {
         "type": "declare_global_constant",
         "name": "w_stress",
-        "value": "Managing Anger & Stress",
+        "value": "Managing Stress",
         "comments": "stress"
       },
       {
         "type": "declare_global_constant",
         "name": "w_stress_short",
-        "value": "Stress",
+        "value": "Managing Stress",
         "comments": "ETW 5 -- done"
       },
       {
         "type": "declare_global_constant",
         "name": "w_money",
-        "value": "Family Budgeting",
+        "value": "Family Budgets",
         "comments": "money"
       },
       {
         "type": "declare_global_constant",
         "name": "w_money_short",
-        "value": "Money",
-        "comments": "ETW 6 -- mostly finished, modulo images and some thinking regarding essential tools and activities"
+        "value": "Family Budgets",
+        "comments": "ETW 6 -- might need reordering"
       },
       {
         "type": "declare_global_constant",
@@ -380,14 +380,14 @@
       {
         "type": "declare_global_constant",
         "name": "w_consequence",
-        "value": "Accepting Responsibility",
+        "value": "Calm Consequences",
         "comments": "consequence"
       },
       {
         "type": "declare_global_constant",
         "name": "w_consequence_short",
-        "value": "Consequences",
-        "comments": "ETW 8"
+        "value": "Calm Consequences",
+        "comments": "ETW 8 -- done"
       },
       {
         "type": "declare_global_constant",
@@ -398,18 +398,19 @@
       {
         "type": "declare_global_constant",
         "name": "w_solve_short",
-        "value": "Problem Solve"
+        "value": "Problem Solving",
+        "comments": "ETW 9 -- waiting for images"
       },
       {
         "type": "declare_global_constant",
         "name": "w_safe",
-        "value": "Keeping Your Teen Safe",
+        "value": "Teen Safety",
         "comments": "safe"
       },
       {
         "type": "declare_global_constant",
         "name": "w_safe_short",
-        "value": "Safety"
+        "value": "Teen Safety"
       },
       {
         "type": "declare_global_constant",
@@ -420,7 +421,7 @@
       {
         "type": "declare_global_constant",
         "name": "w_crisis_short",
-        "value": "Crisis"
+        "value": "Dealing with Crisis"
       }
     ],
     "_xlsxPath": "plh_sheets_beta\\plh_templating\\top_templates\\workshop_templates\\global_variables_workshops.xlsx"
@@ -553,6 +554,179 @@
         "type": "declare_field_default",
         "name": "user_name",
         "value": "Lucie"
+      }
+    ],
+    "_xlsxPath": "plh_sheets_beta\\plh_templating\\top_templates\\workshop_templates\\global_variables_workshops.xlsx"
+  },
+  {
+    "flow_type": "global",
+    "flow_name": "names_of_characters",
+    "status": "released",
+    "rows": [
+      {
+        "type": "declare_global_constant",
+        "name": "guide_1_name",
+        "value": "Giles"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "guide_2_name",
+        "value": "Grace"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "guide_teen_name",
+        "value": "Alex"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_praise_female_caregiver_name",
+        "value": "Felicia"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_instruct_teen_girl",
+        "value": "Amina"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_instruct_female_caregiver",
+        "value": "Grandma"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_stress_teen_boy_1",
+        "value": "Amani"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_stress_girl",
+        "value": "Shukuru"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_stress_male_caregiver",
+        "value": "Father"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_stress_female_caregiver",
+        "value": "Mother"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_stress_teen_girl",
+        "value": "Maria"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_stress_teen_boy_2",
+        "value": "James"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_stress_parent",
+        "value": "Dad"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_rules_teen_boy",
+        "value": "Amani"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_rules_female_caregiver_1",
+        "value": "Mother"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_rules_teen_girl",
+        "value": "Shalini"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_rules_female_caregiver_2",
+        "value": "Mom"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_consequence_teen_boy",
+        "value": "Amani"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_consequence_male_caregiver",
+        "value": "Father"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_consequence_female_caregiver",
+        "value": "Mother"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_money_grandma",
+        "value": "Grandma Sara"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_money_teen_girl",
+        "value": "Amina"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_money_teen_boy",
+        "value": "Baraka"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_solve_female_caregiver_1",
+        "value": "Mother"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_solve_female_caregiver_1_name",
+        "value": "Emma"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_solve_teen_girl",
+        "value": "Faraja"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_solve_teen_boy_1",
+        "value": "Sammy"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_solve_female_caregiver_2",
+        "value": "Grandma"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_solve_teen_boy_2",
+        "value": "Baraka"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_safe_teen_girl_1",
+        "value": "Faraja"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_safe_teen_girl_2",
+        "value": "Amina"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_safe_teen_girl_3",
+        "value": "Shukuru"
+      },
+      {
+        "type": "declare_global_constant",
+        "name": "w_safe_female_caregiver",
+        "value": "Grandma"
       }
     ],
     "_xlsxPath": "plh_sheets_beta\\plh_templating\\top_templates\\workshop_templates\\global_variables_workshops.xlsx"

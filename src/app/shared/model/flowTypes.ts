@@ -356,7 +356,9 @@ export namespace FlowTypes {
     | "radio_group"
     | "tile_component"
     | "css_anim"
-    | "combo_box";
+    | "combo_box"
+    | "icon_banner"
+    | "dashed_box";
 
   export interface TemplateRow {
     type: TemplateRowType;
@@ -364,7 +366,7 @@ export namespace FlowTypes {
     value?: any; // TODO - incoming data will be string, so components should handle own parsing
     action_list?: TemplateRowAction[];
     style_list?: string[];
-    parameter_list?: string[];
+    parameter_list?: { [param: string]: string };
     hidden?: string;
     rows?: TemplateRow[];
     /** track fields above where dynamic expressions have been used in field evaluation */
@@ -400,8 +402,8 @@ export namespace FlowTypes {
     /** field populated for tracking the component that triggered the action */
     _triggeredBy?: string;
     // debug info
-    _raw: string;
-    _cleaned: string;
+    _raw?: string;
+    _cleaned?: string;
   }
 
   export interface Global extends FlowTypeBase {
